@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Weather App</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #00c6ff, #0072ff);
+      color: white;
+      text-align: center;
+      padding: 50px;
+      margin: 0;
+    }
+
+    .container {
+      background-color: rgba(0, 0, 0, 0.3);
+      padding: 20px;
+      border-radius: 15px;
+      display: inline-block;
+    }
+
+    input, button, select {
+      padding: 10px;
+      margin: 10px 5px;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+
+    button, select {
+      background-color: #007BFF;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover, select:hover {
+      background-color: #0056b3;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    #weatherIcon {
+      width: 100px;
+      height: 100px;
+    }
+
+    #history {
+      margin-top: 20px;
+    }
+
+    #history span {
+      display: inline-block;
+      background-color: rgba(255, 255, 255, 0.2);
+      padding: 5px 10px;
+      margin: 3px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    #history span:hover {
+      background-color: rgba(255, 255, 255, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Weather App 🌦</h1>
+    <input type="text" id="cityInput" placeholder="Enter city name" />
+    <br>
+    <button onclick="getWeather()">Search Weather</button>
+    <button onclick="getCurrentLocationWeather()">Use My Location</button>
+    <select id="unitSelect" onchange="convertTempUnit()">
+      <option value="metric">Celsius (°C)</option>
+      <option value="imperial">Fahrenheit (°F)</option>
+    </select>
+
+    <div id="weatherDisplay" class="hidden">
+      <h2 id="cityName"></h2>
+      <img id="weatherIcon" src="" alt="Weather Icon" />
+      <p id="description"></p>
+      <p id="temperature"></p>
+      <p id="humidity"></p>
+      <p id="wind"></p>
+    </div>
+
+    <div id="history"></div>
+  </div>
+
+  <script>
+    const apiKey = "5bc8c3ca507f8fa108df27182a71c4d9";
+    let searchHistory = [];
+    let lastWeatherData = null;
+
+    function getUnitSymbol(unit) {
+      return unit === "imperial" ? "°F" : "°C";
+    }
+
+    function getWeather() {
+      const city = document.getElementById("cityInput").value.trim();
+      const unit = document.getElementById("unitSelect").value;
+
+      if (!city) {
+        alert("Please enter a city name.");
+        return;
+      }
+
+      const url = https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${apiKey}&units=${unit};
+      fetchWeather(url);
+    }
+
+    function getCurrentLocationWeather() {
+      const unit = document.getElementById("unitSelect").value;
+
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(position => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          const url = https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=${unit};
+          fetchWeather(url);
+        }, () => {
+          alert("Location access denied.");
+        });
+      } else {
+        alert("Geolocation is not supported.");
+      }
+    }
+
+    async function fetchWeather(url) {
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.cod === 200) {
+          lastWeatherData = data;
+          displayWeather(data);
+          updateHistory(data.name);
+        } else {
+          alert("City not found.");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Failed to fetch weather data.");
+      }
+    }
+
+    function displayWeather(data) {
+      const unit = document.getElementById("unitSelect").value;
+      const unitSymbol = getUnitSymbol(unit);
+
+      document.getElementById("cityName").textContent = data.name;
+      document.getElementById("description").textContent = data.weather[0].description;
+      document.getElementById("temperature").textContent = 🌡 Temperature: ${data.main.temp} ${unitSymbol};
+      document.getElementById("humidity").textContent = 💧 Humidity: ${data.main.humidity}%;
+      document.getElementById("wind").textContent = 💨 Wind: ${data.wind.speed} m/s;
+      document.getElementById("weatherIcon").src = https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png;
+      document.getElementById("weatherDisplay").classList.remove("hidden");
+    }
+
+    function convertTempUnit() {
+      if (lastWeatherData) {
+        const city = lastWeatherData.name;
+        const unit = document.getElementById("unitSelect").value;
+        const url = https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${apiKey}&units=${unit};
+        fetchWeather(url);
+      }
+    }
+
+    function updateHistory(city) {
+      if (!searchHistory.includes(city)) {
+        searchHistory.push(city);
+        renderHistory();
+      }
+    }
+
+    function renderHistory() {
+      const historyDiv = document.getElementById("history");
+      historyDiv.innerHTML = "<h3>🔁 Search History:</h3>";
+      searchHistory.forEach(city => {
+        const span = document.createElement("span");
+        span.textContent = city;
+        span.onclick = () => {
+          document.getElementById("cityInput").value = city;
+          getWeather();
+        };
+        historyDiv.appendChild(span);
+      });
+    }
+  </script>
+</body>
+</html>
